@@ -1,0 +1,334 @@
+# This Python 3 environment comes with many helpful analytics libraries installedkaggle competitions download -c riiid-tes
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All" 
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+/kaggle/input/riiid-test-answer-prediction/example_sample_submission.csv
+/kaggle/input/riiid-test-answer-prediction/example_test.csv
+/kaggle/input/riiid-test-answer-prediction/questions.csv
+/kaggle/input/riiid-test-answer-prediction/train.csv
+/kaggle/input/riiid-test-answer-prediction/lectures.csv
+/kaggle/input/riiid-test-answer-prediction/riiideducation/competition.cpython-37m-x86_64-linux-gnu.so
+/kaggle/input/riiid-test-answer-prediction/riiideducation/__init__.py
+import pandas as pd
+import seaborn as sns
+df = pd.read_csv('../input/riiid-test-answer-prediction/train.csv', nrows = 1000000)
+Первичое ознакомление с данными
+# Все данные есть. отчетсвие части строк в prior_question_elapsed_time и
+# prior_question_had_explanation можно объянить, что этих данных нет
+# в случае первого вопроса
+df.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 1000000 entries, 0 to 999999
+Data columns (total 10 columns):
+ #   Column                          Non-Null Count    Dtype  
+---  ------                          --------------    -----  
+ 0   row_id                          1000000 non-null  int64  
+ 1   timestamp                       1000000 non-null  int64  
+ 2   user_id                         1000000 non-null  int64  
+ 3   content_id                      1000000 non-null  int64  
+ 4   content_type_id                 1000000 non-null  int64  
+ 5   task_container_id               1000000 non-null  int64  
+ 6   user_answer                     1000000 non-null  int64  
+ 7   answered_correctly              1000000 non-null  int64  
+ 8   prior_question_elapsed_time     976277 non-null   float64
+ 9   prior_question_had_explanation  996184 non-null   object 
+dtypes: float64(1), int64(8), object(1)
+memory usage: 76.3+ MB
+df.head()
+row_id	timestamp	user_id	content_id	content_type_id	task_container_id	user_answer	answered_correctly	prior_question_elapsed_time	prior_question_had_explanation
+0	0	0	115	5692	0	1	3	1	NaN	NaN
+1	1	56943	115	5716	0	2	2	1	37000.0	False
+2	2	118363	115	128	0	0	0	1	55000.0	False
+3	3	131167	115	7860	0	3	0	1	19000.0	False
+4	4	137965	115	7922	0	4	1	1	11000.0	False
+dfl = pd.read_csv('../input/riiid-test-answer-prediction/lectures.csv')
+dfl.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 418 entries, 0 to 417
+Data columns (total 4 columns):
+ #   Column      Non-Null Count  Dtype 
+---  ------      --------------  ----- 
+ 0   lecture_id  418 non-null    int64 
+ 1   tag         418 non-null    int64 
+ 2   part        418 non-null    int64 
+ 3   type_of     418 non-null    object
+dtypes: int64(3), object(1)
+memory usage: 13.2+ KB
+dfl.head(3)
+lecture_id	tag	part	type_of
+0	89	159	5	concept
+1	100	70	1	concept
+2	185	45	6	concept
+dfl.describe()
+lecture_id	tag	part
+count	418.000000	418.000000	418.000000
+mean	16983.401914	94.480861	4.267943
+std	9426.164660	53.586487	1.872424
+min	89.000000	0.000000	1.000000
+25%	9026.250000	50.250000	2.000000
+50%	17161.500000	94.500000	5.000000
+75%	24906.250000	140.000000	6.000000
+max	32736.000000	187.000000	7.000000
+dfq = pd.read_csv('../input/riiid-test-answer-prediction/questions.csv')
+dfq.describe()
+question_id	bundle_id	correct_answer	part
+count	13523.00000	13523.000000	13523.000000	13523.000000
+mean	6761.00000	6760.510907	1.455298	4.264956
+std	3903.89818	3903.857783	1.149707	1.652553
+min	0.00000	0.000000	0.000000	1.000000
+25%	3380.50000	3379.500000	0.000000	3.000000
+50%	6761.00000	6761.000000	1.000000	5.000000
+75%	10141.50000	10140.000000	3.000000	5.000000
+max	13522.00000	13522.000000	3.000000	7.000000
+Все данные выглядят нормально при первичном осмотре
+анализ вспомогательных таблиц questions и lectures
+lectures
+dfl.shape
+(418, 4)
+dfl.head(3)
+lecture_id	tag	part	type_of
+0	89	159	5	concept
+1	100	70	1	concept
+2	185	45	6	concept
+dfl.isna().sum()
+lecture_id    0
+tag           0
+part          0
+type_of       0
+dtype: int64
+dfl.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 418 entries, 0 to 417
+Data columns (total 4 columns):
+ #   Column      Non-Null Count  Dtype 
+---  ------      --------------  ----- 
+ 0   lecture_id  418 non-null    int64 
+ 1   tag         418 non-null    int64 
+ 2   part        418 non-null    int64 
+ 3   type_of     418 non-null    object
+dtypes: int64(3), object(1)
+memory usage: 13.2+ KB
+# посмотрим распеределение лекций по различным частям.
+dfl[['type_of','part','lecture_id']].groupby(['type_of','part'], as_index = False).count().sort_values(by=['type_of', 'part'])
+type_of	part	lecture_id
+0	concept	1	20
+1	concept	2	18
+2	concept	3	7
+3	concept	4	19
+4	concept	5	72
+5	concept	6	63
+6	concept	7	23
+7	intention	2	7
+8	solving question	1	34
+9	solving question	2	31
+10	solving question	3	12
+11	solving question	4	12
+12	solving question	5	69
+13	solving question	6	19
+14	solving question	7	9
+15	starter	5	2
+16	starter	6	1
+sns.scatterplot(data = dfl, x = 'tag', y = 'part', hue = 'type_of')
+<AxesSubplot:xlabel='tag', ylabel='part'>
+
+# Можно ли как-то звязать теги с типом контента? кажется нет
+sns.histplot(data=dfl,x='tag', hue = 'type_of')
+<AxesSubplot:xlabel='tag', ylabel='Count'>
+
+# связть типов контента и частей. тут можно видеть различия. так первые три части
+# более практико ориентированные, потом начинает преобладать теория.
+sns.histplot(data=dfl,x='part', hue = 'type_of', bins=7)
+<AxesSubplot:xlabel='part', ylabel='Count'>
+
+questions
+dfq.head(3)
+question_id	bundle_id	correct_answer	part	tags
+0	0	0	0	1	51 131 162 38
+1	1	1	1	1	131 36 81
+2	2	2	0	1	131 101 162 92
+dfq.isna().sum()
+question_id       0
+bundle_id         0
+correct_answer    0
+part              0
+tags              1
+dtype: int64
+dfq[dfq.tags.isna()]
+question_id	bundle_id	correct_answer	part	tags
+10033	10033	10033	2	6	NaN
+dfq.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 13523 entries, 0 to 13522
+Data columns (total 5 columns):
+ #   Column          Non-Null Count  Dtype 
+---  ------          --------------  ----- 
+ 0   question_id     13523 non-null  int64 
+ 1   bundle_id       13523 non-null  int64 
+ 2   correct_answer  13523 non-null  int64 
+ 3   part            13523 non-null  int64 
+ 4   tags            13522 non-null  object
+dtypes: int64(4), object(1)
+memory usage: 528.4+ KB
+dfq[['part','question_id']].groupby(['part'], as_index=False).count()
+part	question_id
+0	1	992
+1	2	1647
+2	3	1562
+3	4	1439
+4	5	5511
+5	6	1212
+6	7	1160
+#видим, что вопросы распределены равномерно по всем частям за исключением части 5
+sns.histplot(data=dfq, x = 'part', bins=7)
+<AxesSubplot:xlabel='part', ylabel='Count'>
+
+Таблица train
+df.head()
+row_id	timestamp	user_id	content_id	content_type_id	task_container_id	user_answer	answered_correctly	prior_question_elapsed_time	prior_question_had_explanation
+0	0	0	115	5692	0	1	3	1	NaN	NaN
+1	1	56943	115	5716	0	2	2	1	37000.0	False
+2	2	118363	115	128	0	0	0	1	55000.0	False
+3	3	131167	115	7860	0	3	0	1	19000.0	False
+4	4	137965	115	7922	0	4	1	1	11000.0	False
+df.info()
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 1000000 entries, 0 to 999999
+Data columns (total 10 columns):
+ #   Column                          Non-Null Count    Dtype  
+---  ------                          --------------    -----  
+ 0   row_id                          1000000 non-null  int64  
+ 1   timestamp                       1000000 non-null  int64  
+ 2   user_id                         1000000 non-null  int64  
+ 3   content_id                      1000000 non-null  int64  
+ 4   content_type_id                 1000000 non-null  int64  
+ 5   task_container_id               1000000 non-null  int64  
+ 6   user_answer                     1000000 non-null  int64  
+ 7   answered_correctly              1000000 non-null  int64  
+ 8   prior_question_elapsed_time     976277 non-null   float64
+ 9   prior_question_had_explanation  996184 non-null   object 
+dtypes: float64(1), int64(8), object(1)
+memory usage: 76.3+ MB
+# посмотрим сколько у нас уникальных пользователей
+df.agg({'user_id' : pd.Series.nunique})
+user_id    3824
+dtype: int64
+# посмотрим ответы по каждому юзеру
+user_answer  = df[['user_id', 'user_answer', 'answered_correctly']]\
+.groupby(['user_id'], as_index = False).sum()
+user_answer.describe()
+user_id	user_answer	answered_correctly
+count	3.824000e+03	3824.000000	3824.000000
+mean	1.050633e+07	359.514644	161.481172
+std	5.958653e+06	984.492304	457.802761
+min	1.150000e+02	1.000000	-2.000000
+25%	5.363199e+06	38.000000	11.000000
+50%	1.061051e+07	60.000000	23.000000
+75%	1.565077e+07	219.000000	94.000000
+max	2.094902e+07	16907.000000	6103.000000
+# разброс очень большой, хочеся как-то его сократить
+def remove_outliers(df,col,n_std):
+        mean = df[col].mean()
+        sd = df[col].std()
+        
+        df = df[(df[col] <= mean+(n_std*sd))]
+        
+        return df
+
+user_answer = remove_outliers(user_answer, 'user_answer', 1)
+
+user_answer['cor'] = user_answer['answered_correctly']/user_answer['user_answer']
+user_answer.rename(columns={'user_answer':'number_of_answers_per_user'}, inplace=True)
+user_answer.describe()
+# user_answer = user_answer.query('user_answer < 500')
+user_id	number_of_answers_per_user	answered_correctly	cor
+count	3.585000e+03	3585.000000	3585.000000	3585.000000
+mean	1.052197e+07	159.402789	68.483682	0.383755
+std	5.961041e+06	238.836485	111.890436	0.131749
+min	1.150000e+02	1.000000	-2.000000	-0.017241
+25%	5.386918e+06	36.000000	11.000000	0.293103
+50%	1.062930e+07	55.000000	21.000000	0.392857
+75%	1.568217e+07	151.000000	66.000000	0.472603
+max	2.094902e+07	1335.000000	759.000000	1.500000
+# посмотрим распеределение ответов по юзерам. видим, что у нас есть очевидный перекос
+print(user_answer.number_of_answers_per_user.median())
+sns.histplot(data = user_answer, x = 'number_of_answers_per_user')
+55.0
+<AxesSubplot:xlabel='number_of_answers_per_user', ylabel='Count'>
+
+# при желании мы можем нормализовать данные с помощью log_scale
+sns.histplot(data = user_answer, x = 'number_of_answers_per_user', log_scale = True)
+<AxesSubplot:xlabel='number_of_answers_per_user', ylabel='Count'>
+
+# посмотрим, как справляются с вопросами люди, которые нарешали больше 
+# медиального кол вопросов
+print(user_answer.query('number_of_answers_per_user > 55')['cor'].median())
+user_answer.query('number_of_answers_per_user > 55')['cor'].hist(bins=50)
+     
+0.42857142857142855
+<AxesSubplot:>
+
+# а если еще больше (топ 25% по кол вопросов)?
+print(user_answer.query('number_of_answers_per_user > 151')['cor'].median())
+user_answer.query('number_of_answers_per_user > 151')['cor'].hist(bins=50)
+0.4507042253521127
+<AxesSubplot:>
+
+# а если еще больше?
+print(user_answer.query('number_of_answers_per_user > 500')['cor'].median())
+user_answer.query('number_of_answers_per_user > 500')['cor'].hist(bins=50)
+0.4578313253012048
+<AxesSubplot:>
+
+# а если меньше?
+print(user_answer.query('number_of_answers_per_user <=50')['cor'].median())
+user_answer.query('number_of_answers_per_user <=50')['cor'].hist(bins=50)
+0.3333333333333333
+<AxesSubplot:>
+
+По трем графикам выше мы видим, что студенты которые нарешали меньше медеального значения справлялись хуже, чем те, кто нарешал больше. При этом нарешивание вопросов в сильно большем колличестве чем медиана незначительно сказывалось на увеличении правильных ответов.
+looking_for_corr = df[['user_id', 'user_answer', 'answered_correctly', 'prior_question_elapsed_time']].groupby(['user_id'], as_index = False).sum()
+looking_for_corr['prior_question_elapsed_time'] = looking_for_corr['prior_question_elapsed_time']/looking_for_corr['user_answer']
+looking_for_corr['answered_correctly'] = looking_for_corr['answered_correctly']/looking_for_corr['user_answer']
+looking_for_corr.drop('user_id', axis =1, inplace = True)
+looking_for_corr = remove_outliers(looking_for_corr, 'user_answer', 1)
+looking_for_corr.rename(columns = {'user_answer':'number_of_answers_per_user'}, inplace = True)
+looking_for_corr.shape
+looking_for_corr
+number_of_answers_per_user	answered_correctly	prior_question_elapsed_time
+0	72	0.444444	12458.319444
+1	49	0.142857	11122.387755
+2	31	0.322581	10483.870968
+3	169	0.479290	26449.704142
+4	149	0.449664	18923.489933
+...	...	...	...
+3819	575	0.405217	19102.003478
+3820	20	0.350000	18200.000000
+3821	739	0.416779	16015.966171
+3822	78	0.397436	12730.769231
+3823	71	0.211268	21684.225352
+3585 rows × 3 columns
+
+# еще раз подтверждаем отсутвие между успехом и кол. ответов
+sns.scatterplot(data = looking_for_corr, x ='number_of_answers_per_user',\
+                        y = 'answered_correctly' )
+<AxesSubplot:xlabel='number_of_answers_per_user', ylabel='answered_correctly'>
+
+# есть небольшая связь между кол. времени которые студенты в среднем тратять на 
+#предыдущий вопрос и кол. правильных ответов
+
+sns.regplot(data = looking_for_corr, x ='prior_question_elapsed_time',\
+            y = 'answered_correctly' )
+<AxesSubplot:xlabel='prior_question_elapsed_time', ylabel='answered_correctly'>
